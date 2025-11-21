@@ -7,7 +7,17 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet run)",
       "Bash(curl:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Skill(Image Files)",
+      "Bash(convert:*)",
+      "Bash(magick:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(dotnet publish:*)"
     ],
     "deny": [],
     "ask": []

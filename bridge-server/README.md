@@ -25,20 +25,45 @@ This server acts as a localhost bridge, enabling bidirectional communication for
 
 ## Getting Started
 
-### Build
+### Option 1: Run as Windows Service (Recommended)
+
+**Always-on background service that starts automatically with Windows:**
+
+1. Publish the application:
+   ```bash
+   cd ClaudeBrowserBridge
+   dotnet publish -c Release -o publish
+   ```
+
+2. Install service (run as Administrator):
+   - Right-click `install-service.bat`
+   - Select "Run as administrator"
+
+3. Verify it's running:
+   ```bash
+   sc query ClaudeBrowserBridge
+   curl http://localhost:3141/api/browser/health
+   ```
+
+See [Windows Service Setup Guide](WINDOWS-SERVICE.md) for full details.
+
+### Option 2: Run as Console Application
+
+**For development or testing:**
+
+```bash
+cd ClaudeBrowserBridge
+dotnet run
+```
+
+The server will start on `http://localhost:3141`
+
+### Build Only
 
 ```bash
 cd ClaudeBrowserBridge
 dotnet build
 ```
-
-### Run
-
-```bash
-dotnet run
-```
-
-The server will start on `http://localhost:3141`
 
 ### Configuration
 

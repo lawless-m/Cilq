@@ -4,6 +4,12 @@ using ClaudeBrowserBridge.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Windows Service support
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "ClaudeBrowserBridge";
+});
+
 // Configure Kestrel to listen on the specified port
 var config = builder.Configuration.GetSection("BridgeServer").Get<BridgeServerConfig>()
     ?? new BridgeServerConfig();
