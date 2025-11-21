@@ -166,6 +166,9 @@
         if (scriptElement && scriptElement.parentNode) {
           scriptElement.parentNode.removeChild(scriptElement);
         }
+        if (blobUrl) {
+          URL.revokeObjectURL(blobUrl);
+        }
 
         if (event.data.success) {
           sendResponse({ success: true, result: event.data.result });
@@ -176,9 +179,8 @@
 
       window.addEventListener('message', messageHandler);
 
-      // Inject script into page context (to avoid CSP issues)
-      const scriptElement = document.createElement('script');
-      scriptElement.textContent = `
+      // Use blob URL to bypass strict CSP
+      const scriptCode = `
         (function() {
           try {
             const result = (${script});
@@ -199,6 +201,12 @@
         })();
       `;
 
+      const blob = new Blob([scriptCode], { type: 'application/javascript' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      const scriptElement = document.createElement('script');
+      scriptElement.src = blobUrl;
+
       // Execute script
       (document.head || document.documentElement).appendChild(scriptElement);
 
@@ -210,6 +218,9 @@
         window.removeEventListener('message', messageHandler);
         if (scriptElement && scriptElement.parentNode) {
           scriptElement.parentNode.removeChild(scriptElement);
+        }
+        if (blobUrl) {
+          URL.revokeObjectURL(blobUrl);
         }
         sendResponse({ success: false, error: 'Script execution timeout' });
       }, 5000);
