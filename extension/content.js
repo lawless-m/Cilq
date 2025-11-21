@@ -148,13 +148,40 @@
     try {
       // Create a unique ID for this execution
       const executionId = 'claudeBridge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      let timeoutId;
+      let responded = false;
+
+      // Listen for result BEFORE injecting script
+      const messageHandler = (event) => {
+        if (event.source !== window) return;
+        if (event.data.type !== 'CLAUDE_BRIDGE_RESULT') return;
+        if (event.data.executionId !== executionId) return;
+
+        if (responded) return;
+        responded = true;
+
+        clearTimeout(timeoutId);
+        window.removeEventListener('message', messageHandler);
+
+        if (scriptElement && scriptElement.parentNode) {
+          scriptElement.parentNode.removeChild(scriptElement);
+        }
+
+        if (event.data.success) {
+          sendResponse({ success: true, result: event.data.result });
+        } else {
+          sendResponse({ success: false, error: event.data.error });
+        }
+      };
+
+      window.addEventListener('message', messageHandler);
 
       // Inject script into page context (to avoid CSP issues)
       const scriptElement = document.createElement('script');
       scriptElement.textContent = `
         (function() {
           try {
-            const result = ${script};
+            const result = (${script});
             window.postMessage({
               type: 'CLAUDE_BRIDGE_RESULT',
               executionId: '${executionId}',
@@ -172,32 +199,17 @@
         })();
       `;
 
-      // Listen for result
-      const messageHandler = (event) => {
-        if (event.source !== window) return;
-        if (event.data.type !== 'CLAUDE_BRIDGE_RESULT') return;
-        if (event.data.executionId !== executionId) return;
-
-        window.removeEventListener('message', messageHandler);
-        document.head.removeChild(scriptElement);
-
-        if (event.data.success) {
-          sendResponse({ success: true, result: event.data.result });
-        } else {
-          sendResponse({ success: false, error: event.data.error });
-        }
-      };
-
-      window.addEventListener('message', messageHandler);
-
       // Execute script
-      document.head.appendChild(scriptElement);
+      (document.head || document.documentElement).appendChild(scriptElement);
 
       // Timeout after 5 seconds
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        if (responded) return;
+        responded = true;
+
         window.removeEventListener('message', messageHandler);
-        if (scriptElement.parentNode) {
-          document.head.removeChild(scriptElement);
+        if (scriptElement && scriptElement.parentNode) {
+          scriptElement.parentNode.removeChild(scriptElement);
         }
         sendResponse({ success: false, error: 'Script execution timeout' });
       }, 5000);
