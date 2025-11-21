@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Browser Bridge</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 14px;
+      color: #333;
+      background: #f5f5f5;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #1a1a1a;
+    }
+
+    .header .version {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f44336;
+    }
+
+    .status-dot.connected {
+      background: #4CAF50;
+    }
+
+    .status-text {
+      font-weight: 500;
+    }
+
+    .button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button.primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .button.primary:hover {
+      background: #45a049;
+    }
+
+    .button.danger {
+      background: #f44336;
+      color: white;
+    }
+
+    .button.danger:hover {
+      background: #da190b;
+    }
+
+    .button.secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .button.secondary:hover {
+      background: #d5d5d5;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .info {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 500;
+      color: #666;
+    }
+
+    .info-value {
+      color: #333;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 11px;
+      color: #999;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Claude Browser Bridge</h1>
+    <div class="version">v1.0.0</div>
+  </div>
+
+  <div class="status">
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="statusText">Disconnected</div>
+    </div>
+  </div>
+
+  <div class="info" id="connectionInfo">
+    <div class="info-row">
+      <span class="info-label">Bridge Server:</span>
+      <span class="info-value">localhost:3141</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Tab URL:</span>
+      <span class="info-value" id="currentUrl">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Tab Title:</span>
+      <span class="info-value" id="currentTitle">-</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="button primary" id="connectBtn">Connect to Claude</button>
+    <button class="button danger hidden" id="disconnectBtn">Disconnect</button>
+    <button class="button secondary" id="testBtn" disabled>Test Connection</button>
+  </div>
+
+  <div class="footer">
+    Real-time debugging for Claude Code
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+Chrome Extension for Claude Code - Browser Integration
+Project Overview
+A Chrome/Edge extension that creates a bidirectional communication channel between web browsers and Claude Code, enabling real-time debugging, DOM inspection, and interactive development assistance.
+Core Architecture
+Extension Components
+Content Script - Injected into web pages
+Captures DOM state, console logs, network requests
+Executes JavaScript commands from Claude
+Monitors page changes and errors
+Takes screenshots and records element interactions
+Background Service Worker - Extension backend
+Manages connections between tabs and local server
+Handles message routing and state management
+Persists session data across page reloads
+Popup UI - Extension toolbar interface
+"Connect to Claude" toggle button
+Connection status indicator
+Quick access to captured data
+Manual refresh/sync controls
+Local Bridge Server
+A lightweight Node.js/Python server running on localhost:
+WebSocket Server for real-time bidirectional communication
+HTTP API for Claude Code to query browser state
+File Watcher integration with Claude Code workspace
+Listens on localhost:3141 (or configurable port)
+Key Features
+1. DOM Inspection
+// Claude can query: "What's in the pagination div?"
+{
+  "selector": "#pagination",
+  "html": "<div class='pagination'>...</div>",
+  "computedStyles": {...},
+  "boundingBox": {...}
+}
+2. Console Log Capture
+Real-time streaming of console.log, console.error, console.warn
+JavaScript exception tracking with stack traces
+Network request/response logging (optional)
+3. JavaScript Execution
+// Claude sends: "Check if updatePaginationControls exists"
+{
+  "execute": "typeof window.updatePaginationControls",
+  "result": "function"
+}
+4. State Inspection
+Read JavaScript variables: window.state, global objects
+Examine React/Vue component state (if frameworks detected)
+LocalStorage/SessionStorage inspection
+5. Visual Feedback
+Screenshot capture (full page or specific elements)
+Element highlighting for debugging
+Visual diff between expected vs actual state
+Communication Protocol
+Extension → Claude Code
+{
+  "type": "page_load",
+  "url": "https://example.com/translations.html",
+  "timestamp": 1234567890,
+  "dom": "...",
+  "console": [...],
+  "errors": [...]
+}
+Claude Code → Extension
+{
+  "type": "execute_script",
+  "script": "document.getElementById('pagination').innerHTML",
+  "tabId": 123
+}
+Installation & Setup
+For Users:
+Install extension from Chrome Web Store (or load unpacked for dev)
+Run bridge server: npm start or claude-browser-bridge
+Extension auto-connects to localhost:3141
+Click "Connect to Claude" in extension toolbar
+For Claude Code:
+Extension registers as MCP-compatible tool
+Claude Code can invoke: browser.inspect(), browser.execute(), browser.screenshot()
+Real-time updates stream to Claude Code workspace
+Use Cases
+Real-Time Debugging
+User: "The pagination isn't showing"
+Claude: *uses extension to inspect DOM*
+Claude: "I can see #pagination exists but has no innerHTML. 
+         The updatePaginationControls() function isn't being called."
+Interactive Development
+User: "Add a red border to all buttons"
+Claude: *executes via extension*
+browser.execute('document.querySelectorAll("button").forEach(b => b.style.border = "2px solid red")')
+User: *sees changes instantly*
+Claude: "Here's the CSS to make that permanent..."
+Form Testing
+Claude: "I'll test the translation submission"
+browser.execute('document.getElementById("textarea-0").value = "Test translation"')
+browser.execute('document.getElementById("save-btn-0").click()')
+*Captures network request and response*
+Claude: "The save succeeded, HTTP 200 returned"
+Performance Monitoring
+Measure page load times
+Track DuckDB query performance
+Identify render bottlenecks
+Security Considerations
+Localhost Only - Bridge server only accepts connections from 127.0.0.1
+Explicit Permission - User must click "Connect" for each session
+Domain Whitelist - Optional: only works on specified domains
+Code Signing - Extension validates commands from trusted Claude Code instance
+No Automatic Execution - Claude Code requests require user confirmation for destructive actions
+Technology Stack
+Extension:
+Manifest V3 (Chrome/Edge standard)
+TypeScript for type safety
+Webpack for bundling
+Bridge Server:
+Node.js with Express + Socket.io OR
+Python with FastAPI + WebSockets
+Simple JSON protocol for messages
+Claude Code Integration:
+Custom MCP server OR
+Native Claude Code tool integration
+File-based command queue (fallback)
+Folder Structure
+claude-browser-extension/
+├── extension/
+│   ├── manifest.json
+│   ├── background.js
+│   ├── content.js
+│   ├── popup.html/js
+│   └── icons/
+├── bridge-server/
+│   ├── server.js (or server.py)
+│   ├── package.json
+│   └── config.json
+├── claude-code-integration/
+│   ├── mcp-server.js
+│   └── tools.json
+└── README.md
+Development Phases
+Phase 1 (MVP):
+Basic extension with content script
+Simple HTTP polling (no WebSocket yet)
+DOM inspection only
+Manual copy/paste of data to Claude
+Phase 2:
+WebSocket bridge server
+Real-time console log capture
+JavaScript execution capability
+Basic popup UI
+Phase 3:
+Full MCP server integration
+Screenshot/visual feedback
+Network monitoring
+Advanced state inspection
+Phase 4:
+Multi-tab support
+Session recording/playback
+Framework-specific integrations (React DevTools-like)
+Performance profiling

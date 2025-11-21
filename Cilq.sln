@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "bridge-server", "bridge-server", "{21DA37A5-1383-5B1D-456B-B655E393B23F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClaudeBrowserBridge", "bridge-server\ClaudeBrowserBridge\ClaudeBrowserBridge.csproj", "{4D0CCA0E-79B5-2B5F-399F-7E24D6F32A50}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D0CCA0E-79B5-2B5F-399F-7E24D6F32A50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D0CCA0E-79B5-2B5F-399F-7E24D6F32A50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D0CCA0E-79B5-2B5F-399F-7E24D6F32A50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D0CCA0E-79B5-2B5F-399F-7E24D6F32A50}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4D0CCA0E-79B5-2B5F-399F-7E24D6F32A50} = {21DA37A5-1383-5B1D-456B-B655E393B23F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ABBBD71B-D88E-4154-8749-D006E1E6FB01}
+	EndGlobalSection
+EndGlobal
