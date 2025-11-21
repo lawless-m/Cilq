@@ -104,20 +104,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Test by getting page title via content script
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
+      // Check if it's a chrome:// or extension:// page
+      if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('extension://'))) {
+        alert('Cannot inject content script into browser system pages.\n\nPlease navigate to a regular webpage (http:// or https://) and try again.');
+        return;
+      }
+
       const response = await chrome.tabs.sendMessage(tab.id, {
         action: 'execute_script',
         script: 'document.title'
       });
 
-      if (response.success) {
+      if (response && response.success) {
         alert(`Test successful! Page title: "${response.result}"`);
       } else {
-        alert(`Test failed: ${response.error}`);
+        alert(`Test failed: ${response ? response.error : 'Unknown error'}`);
       }
 
     } catch (error) {
       console.error('Test failed:', error);
-      alert(`Test failed: ${error.message}`);
+
+      if (error.message.includes('Receiving end does not exist')) {
+        alert('Content script not loaded.\n\nPlease refresh the page (F5) and try again.\n\nNote: Content scripts are only injected after the extension is loaded.');
+      } else {
+        alert(`Test failed: ${error.message}`);
+      }
     } finally {
       testBtn.disabled = false;
       testBtn.textContent = 'Test Connection';
