@@ -146,85 +146,16 @@
   // Execute arbitrary JavaScript
   function executeScript(script, sendResponse) {
     try {
-      // Create a unique ID for this execution
-      const executionId = 'claudeBridge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      let timeoutId;
-      let responded = false;
-
-      // Listen for result BEFORE injecting script
-      const messageHandler = (event) => {
-        if (event.source !== window) return;
-        if (event.data.type !== 'CLAUDE_BRIDGE_RESULT') return;
-        if (event.data.executionId !== executionId) return;
-
-        if (responded) return;
-        responded = true;
-
-        clearTimeout(timeoutId);
-        window.removeEventListener('message', messageHandler);
-
-        if (scriptElement && scriptElement.parentNode) {
-          scriptElement.parentNode.removeChild(scriptElement);
-        }
-        if (blobUrl) {
-          URL.revokeObjectURL(blobUrl);
-        }
-
-        if (event.data.success) {
-          sendResponse({ success: true, result: event.data.result });
-        } else {
-          sendResponse({ success: false, error: event.data.error });
-        }
-      };
-
-      window.addEventListener('message', messageHandler);
-
-      // Use blob URL to bypass strict CSP
-      const scriptCode = `
-        (function() {
-          try {
-            const result = (${script});
-            window.postMessage({
-              type: 'CLAUDE_BRIDGE_RESULT',
-              executionId: '${executionId}',
-              success: true,
-              result: result
-            }, '*');
-          } catch (error) {
-            window.postMessage({
-              type: 'CLAUDE_BRIDGE_RESULT',
-              executionId: '${executionId}',
-              success: false,
-              error: error.message
-            }, '*');
-          }
-        })();
-      `;
-
-      const blob = new Blob([scriptCode], { type: 'application/javascript' });
-      const blobUrl = URL.createObjectURL(blob);
-
-      const scriptElement = document.createElement('script');
-      scriptElement.src = blobUrl;
-
-      // Execute script
-      (document.head || document.documentElement).appendChild(scriptElement);
-
-      // Timeout after 5 seconds
-      timeoutId = setTimeout(() => {
-        if (responded) return;
-        responded = true;
-
-        window.removeEventListener('message', messageHandler);
-        if (scriptElement && scriptElement.parentNode) {
-          scriptElement.parentNode.removeChild(scriptElement);
-        }
-        if (blobUrl) {
-          URL.revokeObjectURL(blobUrl);
-        }
-        sendResponse({ success: false, error: 'Script execution timeout' });
-      }, 5000);
-
+      // For strict CSP pages, execute in content script context
+      // This can access DOM but not page's window variables/functions
+      try {
+        // Use Function constructor which is CSP-safe
+        const fn = new Function('return (' + script + ')');
+        const result = fn();
+        sendResponse({ success: true, result: result });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
     } catch (error) {
       sendResponse({ success: false, error: error.message });
     }
