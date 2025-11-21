@@ -143,19 +143,61 @@
     return true; // Keep message channel open for async response
   });
 
-  // Execute arbitrary JavaScript
+  // Execute predefined safe operations (CSP-compliant)
   function executeScript(script, sendResponse) {
     try {
-      // For strict CSP pages, execute in content script context
-      // This can access DOM but not page's window variables/functions
-      try {
-        // Use Function constructor which is CSP-safe
-        const fn = new Function('return (' + script + ')');
-        const result = fn();
-        sendResponse({ success: true, result: result });
-      } catch (error) {
-        sendResponse({ success: false, error: error.message });
+      let result;
+
+      // For strict CSP, we can only execute predefined safe operations
+      // Parse the script string and execute known patterns
+      const trimmed = script.trim();
+
+      // Common patterns we support
+      if (trimmed === 'document.title') {
+        result = document.title;
+      } else if (trimmed === 'document.URL' || trimmed === 'window.location.href') {
+        result = document.URL;
+      } else if (trimmed === 'document.readyState') {
+        result = document.readyState;
+      } else if (trimmed === 'document.documentElement.outerHTML') {
+        result = document.documentElement.outerHTML;
+      } else if (trimmed.startsWith('document.querySelector(')) {
+        // Extract selector from document.querySelector('...')
+        const match = trimmed.match(/document\.querySelector\(['"](.+?)['"]\)/);
+        if (match) {
+          const element = document.querySelector(match[1]);
+          result = element ? element.outerHTML : null;
+        } else {
+          throw new Error('Invalid querySelector syntax');
+        }
+      } else if (trimmed.startsWith('document.querySelectorAll(')) {
+        // Extract selector from document.querySelectorAll('...')
+        const match = trimmed.match(/document\.querySelectorAll\(['"](.+?)['"]\)\.length/);
+        if (match) {
+          result = document.querySelectorAll(match[1]).length;
+        } else {
+          throw new Error('Invalid querySelectorAll syntax - use .length');
+        }
+      } else if (trimmed.startsWith('document.getElementById(')) {
+        // Extract id from document.getElementById('...')
+        const match = trimmed.match(/document\.getElementById\(['"](.+?)['"]\)/);
+        if (match) {
+          const element = document.getElementById(match[1]);
+          result = element ? element.outerHTML : null;
+        } else {
+          throw new Error('Invalid getElementById syntax');
+        }
+      } else {
+        // Unsupported operation for strict CSP
+        sendResponse({
+          success: false,
+          error: 'Strict CSP: Only predefined operations supported. Use document.title, document.querySelector(), etc.'
+        });
+        return;
       }
+
+      sendResponse({ success: true, result: result });
+
     } catch (error) {
       sendResponse({ success: false, error: error.message });
     }
