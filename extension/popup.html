@@ -173,6 +173,33 @@
     .hidden {
       display: none;
     }
+
+    .message {
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    .message.info {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #90caf9;
+    }
   </style>
 </head>
 <body>
@@ -202,6 +229,8 @@
       <span class="info-value" id="currentTitle">-</span>
     </div>
   </div>
+
+  <div id="messageBox" class="message hidden"></div>
 
   <div class="actions">
     <button class="button primary" id="connectBtn">Connect to Claude</button>

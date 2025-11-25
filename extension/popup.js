@@ -8,6 +8,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const testBtn = document.getElementById('testBtn');
   const currentUrl = document.getElementById('currentUrl');
   const currentTitle = document.getElementById('currentTitle');
+  const messageBox = document.getElementById('messageBox');
+
+  // Show message in the popup (replaces alert())
+  function showMessage(text, type = 'info') {
+    messageBox.textContent = text;
+    messageBox.className = `message ${type}`;
+    messageBox.classList.remove('hidden');
+
+    // Auto-hide success messages after 5 seconds
+    if (type === 'success') {
+      setTimeout(() => {
+        messageBox.classList.add('hidden');
+      }, 5000);
+    }
+  }
+
+  function hideMessage() {
+    messageBox.classList.add('hidden');
+  }
 
   // Get current tab info
   async function updateTabInfo() {
@@ -56,9 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       connectBtn.disabled = true;
       connectBtn.textContent = 'Connecting...';
-
-      // Get background page and call connect
-      const backgroundPage = await chrome.runtime.getBackgroundClient();
+      hideMessage();
 
       // Send message to background to connect
       await chrome.runtime.sendMessage({ action: 'connect' });
@@ -72,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     } catch (error) {
       console.error('Failed to connect:', error);
-      alert('Failed to connect to bridge server. Make sure it is running on localhost:3141');
+      showMessage('Failed to connect to bridge server. Make sure it is running on localhost:3141', 'error');
       connectBtn.disabled = false;
       connectBtn.textContent = 'Connect to Claude';
     }
@@ -82,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   disconnectBtn.addEventListener('click', async () => {
     try {
       disconnectBtn.disabled = true;
+      hideMessage();
 
       // Send message to background to disconnect
       await chrome.runtime.sendMessage({ action: 'disconnect' });
@@ -100,13 +118,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       testBtn.disabled = true;
       testBtn.textContent = 'Testing...';
+      hideMessage();
 
       // Test by getting page title via content script
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
       // Check if it's a chrome:// or extension:// page
       if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('extension://'))) {
-        alert('Cannot inject content script into browser system pages.\n\nPlease navigate to a regular webpage (http:// or https://) and try again.');
+        showMessage('Cannot inject content script into browser system pages. Please navigate to a regular webpage (http:// or https://) and try again.', 'error');
         return;
       }
 
@@ -116,18 +135,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (response && response.success) {
-        alert(`Test successful! Page title: "${response.result}"`);
+        showMessage(`Test successful! Page title: "${response.result}"`, 'success');
       } else {
-        alert(`Test failed: ${response ? response.error : 'Unknown error'}`);
+        showMessage(`Test failed: ${response ? response.error : 'Unknown error'}`, 'error');
       }
 
     } catch (error) {
       console.error('Test failed:', error);
 
       if (error.message.includes('Receiving end does not exist')) {
-        alert('Content script not loaded.\n\nPlease refresh the page (F5) and try again.\n\nNote: Content scripts are only injected after the extension is loaded.');
+        showMessage('Content script not loaded. Please refresh the page (F5) and try again.', 'error');
       } else {
-        alert(`Test failed: ${error.message}`);
+        showMessage(`Test failed: ${error.message}`, 'error');
       }
     } finally {
       testBtn.disabled = false;
