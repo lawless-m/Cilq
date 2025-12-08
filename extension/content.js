@@ -187,6 +187,21 @@
         } else {
           throw new Error('Invalid getElementById syntax');
         }
+      } else if (trimmed.includes('querySelectorAll') && trimmed.includes('img')) {
+        // Get all image URLs
+        const images = Array.from(document.querySelectorAll('img'));
+        result = images.map(img => img.src);
+      } else if (trimmed.includes('querySelectorAll') && trimmed.includes('.map(')) {
+        // Support common array operations on querySelectorAll
+        // Extract selector
+        const selectorMatch = trimmed.match(/querySelectorAll\(['"](.+?)['"]\)/);
+        if (selectorMatch) {
+          const elements = Array.from(document.querySelectorAll(selectorMatch[1]));
+          // For now, just return the elements as HTML array
+          result = elements.map(el => el.outerHTML);
+        } else {
+          throw new Error('Invalid querySelectorAll syntax');
+        }
       } else {
         // Unsupported operation for strict CSP
         sendResponse({

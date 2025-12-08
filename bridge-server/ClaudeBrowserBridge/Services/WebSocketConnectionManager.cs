@@ -82,7 +82,22 @@ public class WebSocketConnectionManager
     {
         try
         {
-            var message = JsonSerializer.Deserialize<BrowserMessage>(messageJson);
+            _logger.LogInformation("Raw message received from {ConnectionId}: {Message}", connection.ConnectionId, messageJson);
+
+            // Write all messages to file for debugging
+            try
+            {
+                var allMessagesPath = Path.Combine(@"C:\RI Services\BrowserBridge", "all_messages.log");
+                File.AppendAllText(allMessagesPath, $"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff} - {messageJson}\n");
+            }
+            catch { }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var message = JsonSerializer.Deserialize<BrowserMessage>(messageJson, options);
 
             if (message == null)
             {
@@ -90,7 +105,7 @@ public class WebSocketConnectionManager
                 return;
             }
 
-            _logger.LogInformation("Received message type: {Type} from {ConnectionId}",
+            _logger.LogInformation("Deserialized message type: {Type} from {ConnectionId}",
                 message.Type, connection.ConnectionId);
 
             connection.LastMessage = message;
@@ -99,12 +114,27 @@ public class WebSocketConnectionManager
             // Store message in connection history
             connection.MessageHistory.Add(message);
 
+            // Write script results to file for debugging
+            if (message.Type == "script_result")
+            {
+                try
+                {
+                    var resultPath = Path.Combine(@"C:\RI Services\BrowserBridge", "claude_browser_last_result.json");
+                    File.WriteAllText(resultPath, messageJson);
+                    _logger.LogInformation("Wrote script result to {Path}", resultPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to write result to file");
+                }
+            }
+
             // Broadcast to other services if needed
             await Task.CompletedTask;
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to deserialize message from {ConnectionId}", connection.ConnectionId);
+            _logger.LogError(ex, "Failed to deserialize message from {ConnectionId}: {Message}", connection.ConnectionId, messageJson);
         }
     }
 

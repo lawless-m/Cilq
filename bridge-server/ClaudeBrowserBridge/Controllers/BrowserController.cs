@@ -162,6 +162,70 @@ public class BrowserController : ControllerBase
             connections = connectionCount
         });
     }
+
+    [HttpPost("execute-sync")]
+    public async Task<IActionResult> ExecuteScriptSync([FromBody] ExecuteScriptRequest request, [FromQuery] int timeout = 10000)
+    {
+        if (string.IsNullOrEmpty(request.Script))
+        {
+            return BadRequest(new { error = "Script is required" });
+        }
+
+        var message = new ExecuteScriptMessage
+        {
+            Type = "execute_script",
+            Script = request.Script,
+            TabId = request.TabId,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        };
+
+        string connectionId = request.ConnectionId;
+        if (string.IsNullOrEmpty(connectionId))
+        {
+            // Get first available connection
+            var firstConnection = _connectionManager.GetAllConnections().FirstOrDefault();
+            if (firstConnection == null)
+            {
+                return NotFound(new { error = "No browser connections available" });
+            }
+            connectionId = firstConnection.ConnectionId;
+        }
+
+        var connection = _connectionManager.GetConnection(connectionId);
+        if (connection == null)
+        {
+            return NotFound(new { error = $"Connection {connectionId} not found" });
+        }
+
+        var initialMessageCount = connection.MessageHistory.Count;
+
+        // Send the message
+        await _connectionManager.SendMessageAsync(connectionId, message);
+
+        // Wait for response with timeout
+        var startTime = DateTime.UtcNow;
+        while ((DateTime.UtcNow - startTime).TotalMilliseconds < timeout)
+        {
+            await Task.Delay(100);
+
+            // Check if we received a new message
+            if (connection.MessageHistory.Count > initialMessageCount)
+            {
+                var latestMessage = connection.MessageHistory.LastOrDefault();
+                if (latestMessage != null && latestMessage.Type == "script_result")
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        message = latestMessage,
+                        data = latestMessage.Data
+                    });
+                }
+            }
+        }
+
+        return StatusCode(408, new { error = "Script execution timed out" });
+    }
 }
 
 public class ExecuteScriptRequest
