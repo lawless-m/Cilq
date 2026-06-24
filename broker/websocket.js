@@ -46,6 +46,10 @@ class WsConnection extends EventEmitter {
     socket.on('data', (chunk) => this._ingest(chunk));
     socket.on('close', () => this._shutdown());
     socket.on('error', (e) => { this.emit('error', e); this._shutdown(); });
+    // A reverse proxy (Apache wstunnel) half-closes by sending FIN: the socket
+    // ends but 'close' never fires, leaving it in CLOSE-WAIT and the worker
+    // registered forever. Destroy on 'end' so the FD is freed and cleanup runs.
+    socket.on('end', () => socket.destroy());
   }
 
   _ingest(chunk) {
