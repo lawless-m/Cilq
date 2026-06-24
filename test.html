@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browser Bridge — worker test page</title>
+  <!-- Point the client at a LOCAL broker before it loads. -->
+  <script>
+    window.__BRIDGE_URL = 'ws://localhost:3141/ws';
+    window.__BRIDGE_TOKEN = 'BRIDGE';
+  </script>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.3rem; }
+    .panel { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+    .tag { background: #eef; padding: .1rem .4rem; border-radius: 4px; }
+    pre { background: #f6f6f6; padding: .75rem; border-radius: 6px; overflow-x: auto; }
+    #status { font-weight: bold; }
+    .ok { color: #0a0; } .err { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>Browser Bridge — worker test page</h1>
+  <p>This page loads <code>browser-bridge-client.js</code> and becomes a broker worker.
+     It declares <code>data-bridge-node</code> elements and registers a <code>checkout</code> action,
+     so you can drive it from the broker and watch results arrive live.</p>
+
+  <!-- Cooperative markup: stable handles for an agent. -->
+  <div class="panel">
+    <p>Cart total: <span data-bridge-node="cart-total">£42.00</span></p>
+    <p>Quantity: <input data-bridge-node="qty" value="3" size="3"></p>
+    <p>Order status: <span data-bridge-node="status">pending</span></p>
+  </div>
+
+  <div class="panel">
+    <p>Connection: <span id="status">loading client…</span></p>
+    <p>Page contract (<code>bridge.nodes()</code> / <code>bridge.actions()</code>, run locally in this DOM):</p>
+    <pre id="contract">…</pre>
+  </div>
+
+  <div class="panel">
+    <p>Jobs received from the broker (newest first):</p>
+    <pre id="jobs">none yet</pre>
+  </div>
+
+  <div class="panel">
+    <p>Drive it from a shell (broker must run with <code>BRIDGE_TOKEN=BRIDGE</code>):</p>
+    <pre>H='Authorization: Bearer BRIDGE'; C='Content-Type: application/json'
+curl -s localhost:3141/workers -H "$H"
+curl -s -XPOST localhost:3141/jobs/sync -H "$H" -H "$C" -d '{"script":"bridge.nodes()"}'
+curl -s -XPOST localhost:3141/jobs/sync -H "$H" -H "$C" -d '{"script":"bridge.node(\"cart-total\").textContent"}'
+curl -s -XPOST localhost:3141/jobs/sync -H "$H" -H "$C" -d '{"script":"bridge.action(\"checkout\")"}'</pre>
+  </div>
+
+  <!-- The client defines window.bridge synchronously on load. -->
+  <script src="browser-bridge-client.js"></script>
+  <script>
+    // Page-side: register a named action the agent can invoke by name.
+    bridge.register('checkout', function () {
+      document.querySelector('[data-bridge-node="status"]').textContent = 'ordered';
+      return { ok: true, total: bridge.node('cart-total').textContent, qty: bridge.node('qty').value };
+    });
+
+    // Runtime proof the helper works in a real DOM, independent of the broker.
+    document.getElementById('contract').textContent =
+      JSON.stringify({ nodes: bridge.nodes(), actions: bridge.actions() }, null, 2);
+
+    // Show connection + a live feed of jobs the broker sends us.
+    var statusEl = document.getElementById('status');
+    var jobsEl = document.getElementById('jobs');
+    setInterval(function () {
+      var results = window.__bridgeResults || [];
+      if (results.length) {
+        statusEl.textContent = 'connected — ' + results.length + ' job(s) handled';
+        statusEl.className = 'ok';
+        jobsEl.textContent = results.slice().reverse().map(function (r) {
+          return (r.success ? '✓' : '✗') + ' ' +
+                 (r.success ? JSON.stringify(r.result) + ' [' + r.resultType + ']' : r.error);
+        }).join('\n');
+      } else if (statusEl.textContent === 'loading client…') {
+        statusEl.textContent = 'client loaded — waiting for first job';
+      }
+    }, 500);
+  </script>
+</body>
+</html>

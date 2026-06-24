@@ -1,0 +1,22 @@
+# Install: copy to /etc/systemd/system/, edit paths + token, then:
+#   systemctl daemon-reload
+#   systemctl enable --now browser-bridge-broker
+[Unit]
+Description=Browser Bridge Broker
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/browser-bridge/broker
+ExecStart=/usr/bin/node server.js
+Environment=BRIDGE_HOST=127.0.0.1
+Environment=BRIDGE_PORT=3141
+Environment=BRIDGE_TOKEN=BRIDGE
+Environment=BRIDGE_SYNC_TIMEOUT_MS=10000
+Environment=BRIDGE_PUBLIC_URL=https://dw.ramsden-international.com/bridge
+Restart=on-failure
+RestartSec=2
+User=www-data
+
+[Install]
+WantedBy=multi-user.target

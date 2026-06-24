@@ -1,0 +1,13 @@
+{
+  "name": "browser-bridge-broker",
+  "version": "1.0.0",
+  "description": "Message broker: clients submit JavaScript jobs, connected browsers execute them, results are routed back. Zero dependencies.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
