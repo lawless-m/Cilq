@@ -26,7 +26,8 @@ BRIDGE_TOKEN=BRIDGE node server.js
 
 ## HTTP API
 
-Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` on every call except `/health`.
+Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` on every call except the
+unauthenticated ones (`/`, `/health`, `/client.js`, `/status`).
 
 | Method | Path           | Body                          | Behaviour                                                            |
 |--------|----------------|-------------------------------|---------------------------------------------------------------------|
@@ -36,8 +37,18 @@ Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` on every call except `/health`
 | GET    | `/jobs/:id`    | —                             | Job status + result (`pending`/`dispatched`/`done`/`failed`/`expired`). |
 | GET    | `/workers`     | —                             | Connected browsers with identity: `connectionId`, `ip`, `url`, `host`, `path`, `title`. |
 | GET    | `/health`      | —                             | `{status, workers, jobs}` (unauthenticated).                        |
+| GET    | `/status`      | —                             | HTML dashboard (unauthenticated shell). Live view of connected browsers grouped by host; you paste the token in-page and it polls `/health` + `/workers`. |
 
 `target` is a specific connection ID; omit it to run on any one connected browser.
+
+### Status dashboard
+
+`GET /status` serves a self-contained HTML page (e.g.
+`https://dw.ramsden-international.com/bridge/status`). The shell holds no secret;
+paste the token in-page (kept in `sessionStorage`, sent only as a `Bearer` header
+to `/workers`) and it polls every 2s, showing broker health, worker/job counts,
+and connected browsers grouped by host — a quick way to confirm each injection
+point is live. For a CLI equivalent, see `check-workers.sh`.
 
 ```bash
 curl -s -XPOST https://dw.ramsden-international.com/bridge/jobs/sync \

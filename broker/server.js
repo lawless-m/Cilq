@@ -169,6 +169,82 @@ function manifest() {
   };
 }
 
+// Status dashboard. The shell holds no secret; its JS fetches /health (open)
+// and /workers (with the token you paste, kept in sessionStorage). Relative
+// URLs make it work both at /bridge/status and when served directly.
+const STATUS_HTML = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Browser Bridge — status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.3rem; margin-bottom: .2rem; }
+  h3 { margin: 1.2rem 0 .3rem; }
+  .row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  input { font: inherit; padding: .3rem .5rem; border: 1px solid #bbb; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: .3rem .6rem; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; }
+  th { color: #666; font-weight: 600; }
+  .badge { background: #eef; border-radius: 10px; padding: 0 .5rem; font-size: .85em; }
+  .ok { color: #0a0; } .err { color: #c00; } .muted { color: #888; }
+  #status { font-weight: 600; }
+</style></head>
+<body>
+  <h1>Browser Bridge — status</h1>
+  <div class="row">
+    <span id="status" class="muted">connecting…</span>
+    <span id="summary" class="muted"></span>
+    <span class="muted">updated <span id="updated">—</span></span>
+  </div>
+  <p class="row"><label>Token: <input id="token" type="password" placeholder="Bearer token" size="24"></label></p>
+  <div id="sites"><p class="muted">…</p></div>
+<script>
+(function () {
+  var KEY = 'bridgeToken';
+  var input = document.getElementById('token');
+  input.value = sessionStorage.getItem(KEY) || '';
+  input.addEventListener('input', function () { sessionStorage.setItem(KEY, input.value); poll(); });
+  var statusEl = document.getElementById('status');
+  var summaryEl = document.getElementById('summary');
+  var sitesEl = document.getElementById('sites');
+  var updatedEl = document.getElementById('updated');
+  function esc(s) { var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+  function render(workers) {
+    var byHost = {};
+    workers.forEach(function (w) { (byHost[w.host] = byHost[w.host] || []).push(w); });
+    var hosts = Object.keys(byHost).sort();
+    if (!hosts.length) { sitesEl.innerHTML = '<p class="muted">no browsers connected</p>'; return; }
+    var html = '';
+    hosts.forEach(function (h) {
+      html += '<h3>' + esc(h) + ' <span class="badge">' + byHost[h].length + '</span></h3>';
+      html += '<table><thead><tr><th>path</th><th>title</th><th>ip</th><th>connected</th></tr></thead><tbody>';
+      byHost[h].forEach(function (w) {
+        var ago = Math.round((Date.now() - w.connectedAt) / 1000);
+        html += '<tr><td>' + esc(w.path) + '</td><td>' + esc(w.title) + '</td><td>' + esc(w.ip) + '</td><td>' + ago + 's ago</td></tr>';
+      });
+      html += '</tbody></table>';
+    });
+    sitesEl.innerHTML = html;
+  }
+  function poll() {
+    fetch('health').then(function (r) { return r.json(); }).then(function (health) {
+      statusEl.textContent = 'broker OK'; statusEl.className = 'ok';
+      summaryEl.textContent = health.workers + ' worker(s), ' + health.jobs + ' job(s) tracked';
+      updatedEl.textContent = new Date().toLocaleTimeString();
+      var token = input.value.trim();
+      if (!token) { sitesEl.innerHTML = '<p class="muted">enter the token to list connected browsers</p>'; return; }
+      fetch('workers', { headers: { Authorization: 'Bearer ' + token } }).then(function (r) {
+        if (r.status === 401) { sitesEl.innerHTML = '<p class="err">401 — wrong token</p>'; return null; }
+        return r.json();
+      }).then(function (resp) { if (resp) render(resp.workers || []); });
+    }).catch(function () { statusEl.textContent = 'broker unreachable'; statusEl.className = 'err'; });
+  }
+  poll();
+  setInterval(poll, 2000);
+})();
+</script>
+</body></html>`;
+
 // ---- HTTP API ------------------------------------------------------------
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -194,6 +270,13 @@ const server = http.createServer(async (req, res) => {
     } catch {
       return sendJson(res, 404, { error: 'client.js not found on broker' });
     }
+  }
+
+  // Status dashboard shell — open (holds no secret); its JS fetches /workers
+  // with the token the viewer supplies.
+  if (req.method === 'GET' && path === '/status') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    return res.end(STATUS_HTML);
   }
 
   if (!authedHttp(req)) return sendJson(res, 401, { error: 'unauthorized' });
