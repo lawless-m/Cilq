@@ -27,11 +27,12 @@ BRIDGE_TOKEN=BRIDGE node server.js
 ## HTTP API
 
 Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` on every call except the
-unauthenticated ones (`/`, `/health`, `/client.js`, `/status`).
+unauthenticated ones (`/`, `/readme`, `/health`, `/client.js`, `/status`).
 
 | Method | Path           | Body                          | Behaviour                                                            |
 |--------|----------------|-------------------------------|---------------------------------------------------------------------|
 | GET    | `/`            | —                             | Self-describing manifest (what/auth/endpoints/quickstart). Unauthenticated discovery for agents. |
+| GET    | `/readme`      | —                             | This README as Markdown (unauthenticated) — full docs for an agent that wants more than the manifest. |
 | POST   | `/jobs/sync`   | `{script, target?, timeout?}` | Dispatch and block until the result arrives. `503` if no browser, `408` on timeout. |
 | POST   | `/jobs`        | `{script, target?}`           | Enqueue and return `{jobId}`. Runs now, or when a browser connects.  |
 | GET    | `/jobs/:id`    | —                             | Job status + result (`pending`/`dispatched`/`done`/`failed`/`expired`). |

@@ -11,6 +11,7 @@ const TOKEN = process.env.BRIDGE_TOKEN ?? '';        // shared secret; empty = o
 const SYNC_TIMEOUT_MS = Number(process.env.BRIDGE_SYNC_TIMEOUT_MS ?? 10000);
 const JOB_TTL_MS = Number(process.env.BRIDGE_JOB_TTL_MS ?? 5 * 60 * 1000); // retain finished jobs
 const CLIENT_PATH = process.env.BRIDGE_CLIENT_PATH ?? path.join(import.meta.dirname, '..', 'browser-bridge-client.js');
+const README_PATH = path.join(import.meta.dirname, 'README.md');
 // Public base (e.g. https://dw.ramsden-international.com/bridge) for copy-paste
 // examples in the manifest. Apache strips the /bridge prefix, so the broker
 // can't infer it; left empty, the manifest uses relative paths.
@@ -143,6 +144,7 @@ function manifest() {
     auth: 'Send "Authorization: Bearer <token>" on every endpoint except / and /health.',
     endpoints: [
       { method: 'GET', path: '/', auth: false, desc: 'this manifest' },
+      { method: 'GET', path: '/readme', auth: false, desc: 'full docs as Markdown' },
       { method: 'GET', path: '/health', auth: false, desc: 'liveness + counts' },
       { method: 'GET', path: '/workers', auth: true, desc: 'connected browsers with identity: connectionId, ip, host, path, url, title' },
       { method: 'POST', path: '/jobs/sync', auth: true, body: '{script, target?, timeout?}', desc: 'run now, block until the browser returns a result (503 if no browser, 408 on timeout)' },
@@ -269,6 +271,17 @@ const server = http.createServer(async (req, res) => {
       return res.end(js);
     } catch {
       return sendJson(res, 404, { error: 'client.js not found on broker' });
+    }
+  }
+
+  // The README, served as Markdown for agents that ask for the full docs.
+  if (req.method === 'GET' && path === '/readme') {
+    try {
+      const md = fs.readFileSync(README_PATH);
+      res.writeHead(200, { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-cache' });
+      return res.end(md);
+    } catch {
+      return sendJson(res, 404, { error: 'README not found on broker' });
     }
   }
 
