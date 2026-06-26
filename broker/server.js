@@ -141,7 +141,7 @@ function manifest() {
     service: 'browser-bridge-broker',
     what: 'Submit JavaScript jobs; connected browsers eval them; results route back.',
     base: PUBLIC_URL || null,
-    auth: 'Send "Authorization: Bearer <token>" on every endpoint except / and /health.',
+    auth: 'Send "Authorization: Bearer <token>" on every endpoint except the open ones: /, /readme, /health.',
     endpoints: [
       { method: 'GET', path: '/', auth: false, desc: 'this manifest' },
       { method: 'GET', path: '/readme', auth: false, desc: 'full docs as Markdown' },
@@ -198,6 +198,7 @@ const STATUS_HTML = `<!DOCTYPE html>
     <span id="summary" class="muted"></span>
     <span class="muted">updated <span id="updated">—</span></span>
   </div>
+  <p class="row muted">Docs: <a href=".">manifest</a> · <a href="readme">README</a></p>
   <p class="row"><label>Token: <input id="token" type="password" placeholder="Bearer token" size="24"></label></p>
   <div id="sites"><p class="muted">…</p></div>
 <script>
