@@ -61,3 +61,12 @@ desktop.ini
 
 # Keep the main project .claude folder structure
 !.claude/
+# --- build & tooling (auto-added) ---
+publish/
+publish-trimmed/
+build/
+build32/
+.claude/
+.devlog/
+.claude/settings.local.json
+~$*
